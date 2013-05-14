@@ -20,10 +20,12 @@ namespace YADnsServer
         private static readonly List<IPAddress> serverOfCCSUIP;
         private static readonly List<IPAddress> serverOfGoogleIP;
 
-        private static readonly string HostListPath = @"C:\windows\system32\drivers\etc\e-hosts";
+        private static readonly string HostListPath;
 
         static DNSServer()
         {
+            HostListPath = YADnsServer.Properties.Settings.Default["HostListPath"] as string;
+
             serverOfCCSUIP = new List<IPAddress>();
             serverOfCCSUIP.Add(IPAddress.Parse("218.196.40.8"));
             serverOfCCSUIP.Add(IPAddress.Parse("218.196.40.18"));
@@ -66,7 +68,7 @@ namespace YADnsServer
         {
             if (!System.IO.File.Exists(HostListPath))
             {
-                EventLog.WriteEntry("DNS", "不存在" + HostListPath);
+                EventLog.WriteEntry("DNS", "NonExistedConfigFile:" + HostListPath);
                 return;
             }
             // 效率较低的一个做法
