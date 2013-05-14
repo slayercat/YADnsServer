@@ -25,8 +25,8 @@ namespace YADnsServer
             HostListPath = YADnsServer.Properties.Settings.Default["HostListPath"] as string;
         }
 
-        private readonly System.Collections.Generic.Dictionary<string, string> ListOfHosts;
-        private readonly System.Collections.Generic.Dictionary<string, string> ListOfHostsEx;
+        private readonly System.Collections.Generic.Dictionary<string, IPAddress> ListOfHosts;
+        private readonly System.Collections.Generic.Dictionary<string, IPAddress> ListOfHostsEx;
         private readonly System.Collections.Generic.List<IPAddress> GlobalResolveList;
         private readonly System.Collections.Generic.Dictionary<string, List<IPAddress>> ParseByHostNameRegexDirectory;
 
@@ -39,8 +39,8 @@ namespace YADnsServer
                 server = new DnsServer(IPAddress.Any, 10, 10, new DnsServer.ProcessQuery(ProcessQuery));
 
                 //读取host-list
-                ListOfHosts = new Dictionary<string, string>();
-                ListOfHostsEx = new Dictionary<string, string>();
+                ListOfHosts = new Dictionary<string, IPAddress>();
+                ListOfHostsEx = new Dictionary<string, IPAddress>();
                 GlobalResolveList = new List<IPAddress>();
                 ParseByHostNameRegexDirectory = new Dictionary<string, List<IPAddress>>();
                 parseEHostFile();
@@ -91,7 +91,7 @@ namespace YADnsServer
                             if (parts.Count() == 3)
                             {
                                 // 泛域名解析
-                                addToDirectoryIfNotContains(ListOfHostsEx, parts[2], parts[1]);
+                                addToDirectoryIfNotContains(ListOfHostsEx, parts[2], IPAddress.Parse(parts[1]));
                             }
                             else
                             {
@@ -141,7 +141,7 @@ namespace YADnsServer
                             if (parts.Count() == 2)
                             {
                                 // 兼容hosts文件
-                                addToDirectoryIfNotContains(ListOfHostsEx, parts[1], parts[0]);
+                                addToDirectoryIfNotContains(ListOfHostsEx, parts[1], IPAddress.Parse(parts[0]));
                             }
                             else
                             {
@@ -152,7 +152,7 @@ namespace YADnsServer
                 }
                 catch(System.FormatException e)
                 {
-                    EventLog.WriteEntry("DNS", "IP Address Parse Error - Can't Parse：" + m);
+                    EventLog.WriteEntry("DNS", "IP Address Parse Error - Can't Parse：" + m +"\n\n\n"+e.ToString());
                 }
             }
         }
@@ -257,7 +257,7 @@ namespace YADnsServer
             // 基本方法
             if (ListOfHosts.ContainsKey(nohisname))
             {
-                ld = new ARecord(name, 3600, IPAddress.Parse(ListOfHosts[nohisname]));
+                ld = new ARecord(name, 3600, (ListOfHosts[nohisname]));
                 return true;
             }
             // 允许扩展的做法，允许使用正则表达式
@@ -265,7 +265,7 @@ namespace YADnsServer
             {
                 if (System.Text.RegularExpressions.Regex.Match(nohisname, m.Key, System.Text.RegularExpressions.RegexOptions.Singleline).Length == nohisname.Length)
                 {
-                    ld = new ARecord(name, 3600, IPAddress.Parse(m.Value));
+                    ld = new ARecord(name, 3600, (m.Value));
                     return true;
                 }
             }
