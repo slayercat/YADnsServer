@@ -96,19 +96,21 @@ namespace YADnsServer
                         EventLog.WriteEntry("DNS", "无法解析：" + m);
                         continue;
                     }
-                    if (!ListOfHostsEx.ContainsKey(parts[2]))
-                    {
-                        ListOfHostsEx.Add(parts[2], parts[1]);
-                    }
+                    addToDirectoryIfNotContains(ListOfHostsEx,parts[2],parts[1]);
 
                 }
                 else
                 {
-                    if (!ListOfHosts.ContainsKey(parts[1]))
-                    {
-                        ListOfHosts.Add(parts[1], parts[0]);
-                    }
+                    addToDirectoryIfNotContains(ListOfHostsEx, parts[1], parts[0]);
                 }
+            }
+        }
+
+        private static void addToDirectoryIfNotContains(System.Collections.Generic.Dictionary<string, string> target, string key, string value)
+        {
+            if (!target.ContainsKey(key))
+            {
+                target.Add(key, value);
             }
         }
 
