@@ -79,7 +79,7 @@ namespace YADnsServer
                     r = r.Remove(whereofsharp);
                 }
                 r = r.Trim();
-                if (string.IsNullOrWhiteSpace(r))
+                if (string.IsNullOrEmpty(r))
                     continue;
                 var parts = r.Split(new string[] { " " }, StringSplitOptions.RemoveEmptyEntries);
                 try
