@@ -1,0 +1,9 @@
+﻿<?xml version='1.0' encoding='utf-8'?>
+<SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="YADnsServer.Properties" GeneratedClassName="Settings">
+  <Profiles />
+  <Settings>
+    <Setting Name="HostListPath" Type="System.String" Scope="User">
+      <Value Profile="(Default)">C:\windows\system32\drivers\etc\e-hosts</Value>
+    </Setting>
+  </Settings>
+</SettingsFile>
