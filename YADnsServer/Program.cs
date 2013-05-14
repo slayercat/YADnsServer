@@ -12,8 +12,15 @@ namespace YADnsServer
         /// <summary>
         /// 应用程序的主入口点。
         /// </summary>
-        static void Main()
+        static void Main(string[] args)
         {
+            if (args.Count() != 0 && args[0] == "/debug")
+            {
+                var m = new DNSServer();
+                m.testOnly_DoStart(args);
+                return;
+            }
+
             ServiceBase[] ServicesToRun;
             ServicesToRun = new ServiceBase[] 
             { 
