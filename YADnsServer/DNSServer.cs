@@ -83,6 +83,9 @@ namespace YADnsServer
                 {
                     r = r.Remove(whereofsharp);
                 }
+                r = r.Trim();
+                if (string.IsNullOrWhiteSpace(r))
+                    continue;
                 var parts = r.Split(new string[] { " " }, StringSplitOptions.RemoveEmptyEntries);
                 if (parts.Count() > 3 || parts.Count() < 2)
                 {
