@@ -90,37 +90,46 @@ namespace YADnsServer
                 if (string.IsNullOrWhiteSpace(r))
                     continue;
                 var parts = r.Split(new string[] { " " }, StringSplitOptions.RemoveEmptyEntries);
-                if (parts.Count() > 3 || parts.Count() < 2)
+                
+                //扩展正则表达式
+                switch (parts[0])
                 {
-                    //假设本行有问题
-                    EventLog.WriteEntry("DNS", "Can't Parse：" + m);
-                    continue;
-                }
-                if (parts.Count() == 3)
-                {
-                    //扩展正则表达式
-                    switch (parts[0])
-                    {
-                        case "+":
+                    case "+":
+                        if (parts.Count() == 3)
+                        {
+                            // 泛域名解析
                             addToDirectoryIfNotContains(ListOfHostsEx, parts[2], parts[1]);
-                            break;
+                        }
+                        else
+                        {
+                            EventLog.WriteEntry("DNS", "improper Line begin with +, Can't Parse：" + m);
+                        }
+                        break;
 
-                        default:
+                    case "*":
+                        if (parts.Count() == 2)
+                        {
+                            // 全局解析
+                            addToListOfGlobalResolve(GlobalResolveList, parts[1]);
+                        }
+                        else
+                        {
+                            EventLog.WriteEntry("DNS", "improper Line begin with *, Can't Parse：" + m);
+                        }
+                        break;
+
+                    default:
+                        if (parts.Count() == 2)
+                        {
+                            // 兼容hosts文件
+                            addToDirectoryIfNotContains(ListOfHostsEx, parts[1], parts[0]);
+                        }
+                        else
+                        {
                             EventLog.WriteEntry("DNS", "Can't Parse：" + m);
-                            continue;
-                    }                   
-
-                }
-                else
-                {
-                    if (parts[0] == "*")
-                    {
-                        // 全局解析
-                        addToListOfGlobalResolve(GlobalResolveList, parts[1]);
-                    }
-
-                    addToDirectoryIfNotContains(ListOfHostsEx, parts[1], parts[0]);
-                }
+                        }
+                        continue;
+                }                  
             }
         }
 
