@@ -14,27 +14,21 @@ namespace YADnsServer
     public partial class DNSServer : ServiceBase
     {
         DnsServer server;
-        DnsClient serverOfCCSU;
         DnsClient serverOfGlobal;
 
-        private static readonly List<IPAddress> serverOfCCSUIP;
+
 
         private static readonly string HostListPath;
 
         static DNSServer()
         {
             HostListPath = YADnsServer.Properties.Settings.Default["HostListPath"] as string;
-
-            serverOfCCSUIP = new List<IPAddress>();
-            serverOfCCSUIP.Add(IPAddress.Parse("218.196.40.8"));
-            serverOfCCSUIP.Add(IPAddress.Parse("218.196.40.18"));
-            serverOfCCSUIP.Add(IPAddress.Parse("218.196.40.9"));
-
         }
 
         private readonly System.Collections.Generic.Dictionary<string, string> ListOfHosts;
         private readonly System.Collections.Generic.Dictionary<string, string> ListOfHostsEx;
         private readonly System.Collections.Generic.List<IPAddress> GlobalResolveList;
+        private readonly System.Collections.Generic.Dictionary<string, List<IPAddress>> ParseByHostNameRegexDirectory;
 
         public DNSServer()
         {
@@ -44,19 +38,17 @@ namespace YADnsServer
             {
                 server = new DnsServer(IPAddress.Any, 10, 10, new DnsServer.ProcessQuery(ProcessQuery));
 
-                serverOfCCSU = new DnsClient(serverOfCCSUIP, 1);
-
-
                 //读取host-list
                 ListOfHosts = new Dictionary<string, string>();
                 ListOfHostsEx = new Dictionary<string, string>();
                 GlobalResolveList = new List<IPAddress>();
+                ParseByHostNameRegexDirectory = new Dictionary<string, List<IPAddress>>();
                 parseEHostFile();
                 if (GlobalResolveList.Count() == 0)
                 {
                     EventLog.WriteEntry("DNS", "GlobalResolveList is null. means upload resolve is disabled in this case", EventLogEntryType.Warning);
                 }
-                serverOfGlobal = new DnsClient(GlobalResolveList, 5);
+                serverOfGlobal = new DnsClient(GlobalResolveList, 1000);
             }
             catch (Exception e)
             {
@@ -111,11 +103,31 @@ namespace YADnsServer
                             if (parts.Count() == 2)
                             {
                                 // 全局解析
-                                addToListOfGlobalResolve(GlobalResolveList, parts[1]);
+                                addToListOfIPaddress(GlobalResolveList, parts[1]);
                             }
                             else
                             {
                                 EventLog.WriteEntry("DNS", "improper Line begin with *, Can't Parse：" + m);
+                            }
+                            break;
+
+                        case"-":
+                            //用于根据dns地址解析到不同的dns服务器上去
+                            //格式：
+                            // - HostDomainRegex Dns1 [Dns2] [...]
+                            if (!(parts.Count() < 3))
+                            {
+                                var mdlist = new List<IPAddress>();
+                                for (int mr = 2; mr < parts.Count(); ++mr)
+                                {
+                                    addToListOfIPaddress(mdlist, parts[mr]);
+                                }
+                                addToDirectoryIfNotContains(ParseByHostNameRegexDirectory, parts[1], mdlist);
+                                
+                            }
+                            else
+                            {
+                                EventLog.WriteEntry("DNS", "improper Line begin with -, count error, Can't Parse：" + m);
                             }
                             break;
 
@@ -139,12 +151,12 @@ namespace YADnsServer
             }
         }
 
-        private void addToListOfGlobalResolve(List<IPAddress> GlobalResolveList, string address)
+        private void addToListOfIPaddress(List<IPAddress> L_IPAddress, string address)
         {
-            GlobalResolveList.Add(IPAddress.Parse(address));
+            L_IPAddress.Add(IPAddress.Parse(address));
         }
 
-        private static void addToDirectoryIfNotContains(System.Collections.Generic.Dictionary<string, string> target, string key, string value)
+        private static void addToDirectoryIfNotContains<T,K>(System.Collections.Generic.Dictionary<T, K> target, T key, K value)
         {
             if (!target.ContainsKey(key))
             {
@@ -180,15 +192,17 @@ namespace YADnsServer
             DnsRecordBase ld;
             if (!queryInHosts(query.Questions[0].Name, out ld))
             {
-                if (query.Questions[0].Name.EndsWith("ccsu.cn") || query.Questions[0].Name.EndsWith("ccsu.cn."))
+                DnsClient queryHere;
+                if (querySomeDnsByHostName(query.Questions[0].Name,out queryHere))
                 {
-                    //处理长沙学院的东西
-                    query.AnswerRecords.AddRange(queryRemoteDns(query.Questions[0].Name, serverOfCCSU));
+                    //处理基于host的分dns的解析信息
+                    query.AnswerRecords.AddRange(queryRemoteDns(query.Questions[0].Name, queryHere));
                 }
                 else
                 {
                     query.AnswerRecords.AddRange(queryRemoteDns(query.Questions[0].Name, serverOfGlobal));
                 }
+                
             }
             else
             {
@@ -196,6 +210,31 @@ namespace YADnsServer
             }
 
             return message;
+        }
+
+        private bool querySomeDnsByHostName(string name, out DnsClient queryHere)
+        {
+            string nohisname;
+            if (name.EndsWith("."))
+            {
+                nohisname = name.Remove(name.Length - 1);
+            }
+            else
+            {
+                nohisname = name;
+            }
+            //使用正则表达式
+            foreach (var m in ParseByHostNameRegexDirectory)
+            {
+                if (System.Text.RegularExpressions.Regex.Match(nohisname, m.Key, System.Text.RegularExpressions.RegexOptions.Singleline).Length == nohisname.Length)
+                {
+                    //完全吻合！！
+                    queryHere = new DnsClient(m.Value, 10000);
+                    return true;
+                }
+            }
+            queryHere = null;
+            return false;
         }
 
         private bool queryInHosts(string name, out DnsRecordBase ld)
