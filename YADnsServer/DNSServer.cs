@@ -90,46 +90,52 @@ namespace YADnsServer
                 if (string.IsNullOrWhiteSpace(r))
                     continue;
                 var parts = r.Split(new string[] { " " }, StringSplitOptions.RemoveEmptyEntries);
-                
-                //扩展正则表达式
-                switch (parts[0])
+                try
                 {
-                    case "+":
-                        if (parts.Count() == 3)
-                        {
-                            // 泛域名解析
-                            addToDirectoryIfNotContains(ListOfHostsEx, parts[2], parts[1]);
-                        }
-                        else
-                        {
-                            EventLog.WriteEntry("DNS", "improper Line begin with +, Can't Parse：" + m);
-                        }
-                        break;
+                    //扩展正则表达式
+                    switch (parts[0])
+                    {
+                        case "+":
+                            if (parts.Count() == 3)
+                            {
+                                // 泛域名解析
+                                addToDirectoryIfNotContains(ListOfHostsEx, parts[2], parts[1]);
+                            }
+                            else
+                            {
+                                EventLog.WriteEntry("DNS", "improper Line begin with +, Can't Parse：" + m);
+                            }
+                            break;
 
-                    case "*":
-                        if (parts.Count() == 2)
-                        {
-                            // 全局解析
-                            addToListOfGlobalResolve(GlobalResolveList, parts[1]);
-                        }
-                        else
-                        {
-                            EventLog.WriteEntry("DNS", "improper Line begin with *, Can't Parse：" + m);
-                        }
-                        break;
+                        case "*":
+                            if (parts.Count() == 2)
+                            {
+                                // 全局解析
+                                addToListOfGlobalResolve(GlobalResolveList, parts[1]);
+                            }
+                            else
+                            {
+                                EventLog.WriteEntry("DNS", "improper Line begin with *, Can't Parse：" + m);
+                            }
+                            break;
 
-                    default:
-                        if (parts.Count() == 2)
-                        {
-                            // 兼容hosts文件
-                            addToDirectoryIfNotContains(ListOfHostsEx, parts[1], parts[0]);
-                        }
-                        else
-                        {
-                            EventLog.WriteEntry("DNS", "Can't Parse：" + m);
-                        }
-                        continue;
-                }                  
+                        default:
+                            if (parts.Count() == 2)
+                            {
+                                // 兼容hosts文件
+                                addToDirectoryIfNotContains(ListOfHostsEx, parts[1], parts[0]);
+                            }
+                            else
+                            {
+                                EventLog.WriteEntry("DNS", "Can't Parse：" + m);
+                            }
+                            continue;
+                    }
+                }
+                catch(System.FormatException e)
+                {
+                    EventLog.WriteEntry("DNS", "IP Address Parse Error - Can't Parse：" + m);
+                }
             }
         }
 
