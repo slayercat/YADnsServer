@@ -15,10 +15,9 @@ namespace YADnsServer
     {
         DnsServer server;
         DnsClient serverOfCCSU;
-        DnsClient serverOfGoogle;
+        DnsClient serverOfGlobal;
 
         private static readonly List<IPAddress> serverOfCCSUIP;
-        private static readonly List<IPAddress> serverOfGoogleIP;
 
         private static readonly string HostListPath;
 
@@ -31,13 +30,11 @@ namespace YADnsServer
             serverOfCCSUIP.Add(IPAddress.Parse("218.196.40.18"));
             serverOfCCSUIP.Add(IPAddress.Parse("218.196.40.9"));
 
-            serverOfGoogleIP = new List<IPAddress>();
-            serverOfGoogleIP.Add(IPAddress.Parse("8.8.8.8"));
-            serverOfGoogleIP.Add(IPAddress.Parse("8.8.4.4"));
         }
 
         private readonly System.Collections.Generic.Dictionary<string, string> ListOfHosts;
         private readonly System.Collections.Generic.Dictionary<string, string> ListOfHostsEx;
+        private readonly System.Collections.Generic.List<IPAddress> GlobalResolveList;
 
         public DNSServer()
         {
@@ -49,12 +46,17 @@ namespace YADnsServer
 
                 serverOfCCSU = new DnsClient(serverOfCCSUIP, 1);
 
-                serverOfGoogle = new DnsClient(serverOfGoogleIP, 5);
 
                 //读取host-list
                 ListOfHosts = new Dictionary<string, string>();
                 ListOfHostsEx = new Dictionary<string, string>();
+                GlobalResolveList = new List<IPAddress>();
                 parseEHostFile();
+                if (GlobalResolveList.Count() == 0)
+                {
+                    EventLog.WriteEntry("DNS", "GlobalResolveList is null. means upload resolve is disabled in this case", EventLogEntryType.Warning);
+                }
+                serverOfGlobal = new DnsClient(GlobalResolveList, 5);
             }
             catch (Exception e)
             {
@@ -63,6 +65,7 @@ namespace YADnsServer
             }
 
         }
+
 
         private void parseEHostFile()
         {
@@ -90,7 +93,7 @@ namespace YADnsServer
                 if (parts.Count() > 3 || parts.Count() < 2)
                 {
                     //假设本行有问题
-                    EventLog.WriteEntry("DNS", "无法解析：" + m);
+                    EventLog.WriteEntry("DNS", "Can't Parse：" + m);
                     continue;
                 }
                 if (parts.Count() == 3)
@@ -103,16 +106,27 @@ namespace YADnsServer
                             break;
 
                         default:
-                            EventLog.WriteEntry("DNS", "无法解析：" + m);
+                            EventLog.WriteEntry("DNS", "Can't Parse：" + m);
                             continue;
                     }                   
 
                 }
                 else
                 {
+                    if (parts[0] == "*")
+                    {
+                        // 全局解析
+                        addToListOfGlobalResolve(GlobalResolveList, parts[1]);
+                    }
+
                     addToDirectoryIfNotContains(ListOfHostsEx, parts[1], parts[0]);
                 }
             }
+        }
+
+        private void addToListOfGlobalResolve(List<IPAddress> GlobalResolveList, string address)
+        {
+            GlobalResolveList.Add(IPAddress.Parse(address));
         }
 
         private static void addToDirectoryIfNotContains(System.Collections.Generic.Dictionary<string, string> target, string key, string value)
@@ -120,6 +134,10 @@ namespace YADnsServer
             if (!target.ContainsKey(key))
             {
                 target.Add(key, value);
+            }
+            else
+            {
+                EventLog.WriteEntry("DNS", "warning duplicate line for key：" + key);
             }
         }
 
@@ -154,7 +172,7 @@ namespace YADnsServer
                 }
                 else
                 {
-                    query.AnswerRecords.AddRange(queryRemoteDns(query.Questions[0].Name, serverOfGoogle));
+                    query.AnswerRecords.AddRange(queryRemoteDns(query.Questions[0].Name, serverOfGlobal));
                 }
             }
             else
