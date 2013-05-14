@@ -96,12 +96,16 @@ namespace YADnsServer
                 if (parts.Count() == 3)
                 {
                     //扩展正则表达式
-                    if (parts[0] != "*")
+                    switch (parts[0])
                     {
-                        EventLog.WriteEntry("DNS", "无法解析：" + m);
-                        continue;
-                    }
-                    addToDirectoryIfNotContains(ListOfHostsEx,parts[2],parts[1]);
+                        case "+":
+                            addToDirectoryIfNotContains(ListOfHostsEx, parts[2], parts[1]);
+                            break;
+
+                        default:
+                            EventLog.WriteEntry("DNS", "无法解析：" + m);
+                            continue;
+                    }                   
 
                 }
                 else
