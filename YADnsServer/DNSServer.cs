@@ -100,10 +100,16 @@ namespace YADnsServer
                             break;
 
                         case "*":
-                            if (parts.Count() == 2)
+                            if (parts.Count() >= 2)
                             {
                                 // 全局解析
-                                addToListOfIPaddress(GlobalResolveList, parts[1]);
+                                //格式：
+                                // * Dns1 [Dns2] [...]
+                                // 多条将被加入
+                                for (int mr = 1; mr < parts.Count(); ++mr)
+                                {
+                                    addToListOfIPaddress(GlobalResolveList, parts[mr]);
+                                }
                             }
                             else
                             {
