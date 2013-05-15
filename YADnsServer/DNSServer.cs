@@ -232,7 +232,7 @@ namespace YADnsServer
             //使用正则表达式
             foreach (var m in ParseByHostNameRegexDirectory)
             {
-                if (System.Text.RegularExpressions.Regex.Match(nohisname, m.Key, System.Text.RegularExpressions.RegexOptions.Singleline).Length == nohisname.Length)
+                if (System.Text.RegularExpressions.Regex.Match(nohisname, m.Key, System.Text.RegularExpressions.RegexOptions.Singleline|System.Text.RegularExpressions.RegexOptions.IgnoreCase|System.Text.RegularExpressions.RegexOptions.Compiled).Length == nohisname.Length)
                 {
                     //完全吻合！！
                     queryHere = m.Value;
