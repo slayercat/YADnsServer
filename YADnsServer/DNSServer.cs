@@ -141,7 +141,7 @@ namespace YADnsServer
                             if (parts.Count() == 2)
                             {
                                 // 兼容hosts文件
-                                addToDirectoryIfNotContains(ListOfHostsEx, parts[1], IPAddress.Parse(parts[0]));
+                                addToDirectoryIfNotContains(ListOfHosts, parts[1], IPAddress.Parse(parts[0]));
                             }
                             else
                             {
