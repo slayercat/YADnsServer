@@ -38,6 +38,11 @@ use - to choose the regex for another dns server that matchs this regex, for exa
         choose 218.196.40.8 and 218.196.40.18 218.196.40.9 as the dns server of *.ccsu.cn
         (be careful, *.ccsu.cn will not be realized by program, it's not a regex! )
         
+        notehere--- such a complex regex will take a hollow long time of request for it contains sub regex!
+        
+        so you may want to replace it to \w+.ccsu.cn or \w+.\w+.ccsu.cn etc, and never use complex items.
+
+
 as the example indecate, you can choose multiple nameserver address in one line. but be sure that you can't use two difficult line to do that. the second line just be ignored here.
 
 
