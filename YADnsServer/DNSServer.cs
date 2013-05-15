@@ -28,7 +28,7 @@ namespace YADnsServer
         private readonly System.Collections.Generic.Dictionary<string, IPAddress> ListOfHosts;
         private readonly System.Collections.Generic.Dictionary<string, IPAddress> ListOfHostsEx;
         private readonly System.Collections.Generic.List<IPAddress> GlobalResolveList;
-        private readonly System.Collections.Generic.Dictionary<string, List<IPAddress>> ParseByHostNameRegexDirectory;
+        private readonly System.Collections.Generic.Dictionary<string, DnsClient> ParseByHostNameRegexDirectory;
 
         public DNSServer()
         {
@@ -42,13 +42,13 @@ namespace YADnsServer
                 ListOfHosts = new Dictionary<string, IPAddress>();
                 ListOfHostsEx = new Dictionary<string, IPAddress>();
                 GlobalResolveList = new List<IPAddress>();
-                ParseByHostNameRegexDirectory = new Dictionary<string, List<IPAddress>>();
+                ParseByHostNameRegexDirectory = new Dictionary<string, DnsClient>();
                 parseEHostFile();
                 if (GlobalResolveList.Count() == 0)
                 {
                     EventLog.WriteEntry("DNS", "GlobalResolveList is null. means upload resolve is disabled in this case", EventLogEntryType.Warning);
                 }
-                serverOfGlobal = new DnsClient(GlobalResolveList, 1000);
+                serverOfGlobal = new DnsClient(GlobalResolveList, 3);
             }
             catch (Exception e)
             {
@@ -128,7 +128,7 @@ namespace YADnsServer
                                 {
                                     addToListOfIPaddress(mdlist, parts[mr]);
                                 }
-                                addToDirectoryIfNotContains(ParseByHostNameRegexDirectory, parts[1], mdlist);
+                                addToDirectoryIfNotContains(ParseByHostNameRegexDirectory, parts[1], new DnsClient(mdlist,5));
                                 
                             }
                             else
@@ -235,7 +235,7 @@ namespace YADnsServer
                 if (System.Text.RegularExpressions.Regex.Match(nohisname, m.Key, System.Text.RegularExpressions.RegexOptions.Singleline).Length == nohisname.Length)
                 {
                     //完全吻合！！
-                    queryHere = new DnsClient(m.Value, 10000);
+                    queryHere = m.Value;
                     return true;
                 }
             }
